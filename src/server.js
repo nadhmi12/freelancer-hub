@@ -3,6 +3,8 @@ import { randomUUID } from "crypto"
 
 // local import 
 import { ENV } from "./config/env.js"
+import {clientSchema, updateClientSchema} from "./config/validation.js"
+
 
 const app = express()
 app.use(express.json())
@@ -30,10 +32,18 @@ app.get("/api/clients/:id", (req, res) => {
 })
 
 app.post("/api/clients", (req,res) => {
-    const {name, email} = req.body
-    if (!name || !email) {
-        return res.status(400).json({error: "Name and Email are required"})
+
+    const result = clientSchema.safeParse(req.body)
+    if(!result.success) {
+        const errors = result.error.issues.map(issue => ({
+            path: issue.path[0],
+            message: issue.message
+        })) 
+        console.log(errors)
+        return res.status(400).json(errors)
     }
+
+    const {name, email} = result.data
     const newClient = {
         id: randomUUID(),
         name,
@@ -45,8 +55,24 @@ app.post("/api/clients", (req,res) => {
 })
 
 app.patch("/api/clients/:id", (req, res) => {
+
+    const result = updateClientSchema.safeParse(req.body)
+
+    if(!result.success) {
+        const errors = result.error.issues.map(issue => ({
+            path: issue.path[0],
+            message: issue.message
+        })) 
+        console.log(errors)
+        return res.status(400).json(errors)
+    }
+
+    if (Object.keys(result.data).length === 0) {
+        return res.status(400).json({error: "At least one field is required to update"})
+    }
+
     const clientId = req.params.id
-    const data = req.body
+    const data = result.data
     const index = clients.findIndex((client) => client.id === clientId)
 
     if (index === -1) {
