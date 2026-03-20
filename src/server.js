@@ -4,7 +4,7 @@ import { randomUUID } from "crypto"
 // local import 
 import { ENV } from "./config/env.js"
 import {clientSchema, updateClientSchema} from "./config/validation.js"
-
+import { errorHandler, AppError } from "./middleware/errorHandler.js"
 
 const app = express()
 app.use(express.json())
@@ -22,16 +22,16 @@ const clients = [
 app.get("/api/clients", (req, res) => {
     res.status(200).json(clients)
 })
-app.get("/api/clients/:id", (req, res) => {
+app.get("/api/clients/:id", (req, res, next) => {
     const clientId = req.params.id
     const client = clients.find((client) => client.id === clientId)
     if(!client) {
-        return res.status(404).json({error: "Client not found"})
+        return next(new AppError("Client not found", 404))
     }
     return res.status(200).json(client)
 })
 
-app.post("/api/clients", (req,res) => {
+app.post("/api/clients", (req,res, next) => {
 
     const result = clientSchema.safeParse(req.body)
     if(!result.success) {
@@ -39,8 +39,7 @@ app.post("/api/clients", (req,res) => {
             path: issue.path[0],
             message: issue.message
         })) 
-        console.log(errors)
-        return res.status(400).json(errors)
+        return next(new AppError("Validation failed", 400, errors))
     }
 
     const {name, email} = result.data
@@ -54,7 +53,7 @@ app.post("/api/clients", (req,res) => {
     return res.status(201).json(newClient)
 })
 
-app.patch("/api/clients/:id", (req, res) => {
+app.patch("/api/clients/:id", (req, res, next) => {
 
     const result = updateClientSchema.safeParse(req.body)
 
@@ -63,12 +62,11 @@ app.patch("/api/clients/:id", (req, res) => {
             path: issue.path[0],
             message: issue.message
         })) 
-        console.log(errors)
-        return res.status(400).json(errors)
+        return next(new AppError("Validation failed", 400, errors))
     }
 
     if (Object.keys(result.data).length === 0) {
-        return res.status(400).json({error: "At least one field is required to update"})
+        return next(new AppError("At least one field is required to update", 400))
     }
 
     const clientId = req.params.id
@@ -76,7 +74,7 @@ app.patch("/api/clients/:id", (req, res) => {
     const index = clients.findIndex((client) => client.id === clientId)
 
     if (index === -1) {
-        return res.status(404).json({error: "Client not found"})
+        return next(new AppError("Client not found", 404))
     }
     clients[index] = {
         ...clients[index],
@@ -85,11 +83,11 @@ app.patch("/api/clients/:id", (req, res) => {
     return res.status(200).json(clients[index])
 })
 
-app.delete("/api/clients/:id", (req, res) => {
+app.delete("/api/clients/:id", (req, res, next) => {
     const clientId = req.params.id
     const index = clients.findIndex((client) => client.id === clientId)
     if (index === -1) {
-        return res.status(404).json({error: "Client not found"})
+        return next(new AppError("Client not found", 404))
     }
     clients.splice(index,1)
     return res.sendStatus(204)
@@ -101,7 +99,7 @@ app.get("/health", (req,res) => {
 })
 
 
-
+app.use(errorHandler)
 app.listen(ENV.PORT, () => {
     console.log(`server is running on http://localhost:${ENV.PORT}`)
 })
