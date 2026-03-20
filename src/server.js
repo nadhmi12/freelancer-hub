@@ -67,6 +67,10 @@ app.patch("/api/clients/:id", (req, res) => {
         return res.status(400).json(errors)
     }
 
+    if (Object.keys(result.data).length === 0) {
+        return res.status(400).json({error: "At least one field is required to update"})
+    }
+
     const clientId = req.params.id
     const data = result.data
     const index = clients.findIndex((client) => client.id === clientId)
