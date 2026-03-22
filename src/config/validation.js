@@ -1,7 +1,7 @@
 import { z } from "zod"
 
 export const clientSchema = z.object({
-    name: z.string().min(3).max(10),
+    name: z.string().min(3).max(20),
     email: z.email()
 })
 
