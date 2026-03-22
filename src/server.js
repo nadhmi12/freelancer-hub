@@ -4,12 +4,13 @@ import express from "express";
 import { ENV } from "./config/env.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import clientRouter from "./routes/client.routes.js";
+import projectRouter from "./routes/project.routes.js";
 
 const app = express();
 app.use(express.json());
 
 app.use("/api/clients", clientRouter);
-
+app.use("/api/clients/:clientId", projectRouter)
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });

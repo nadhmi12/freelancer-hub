@@ -11,4 +11,23 @@ model Client {
   name      String
   email     String   @unique
   createdAt DateTime @default(now())
+  projects Project[]
+}
+
+
+enum ProjectStatus {
+  TODO
+  IN_PROGRESS
+  COMPLETED
+  DELIVERED
+} 
+
+model Project {
+  id String @id @default(uuid())
+  clientId String
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  description String
+  status ProjectStatus @default(TODO)
+  deadline DateTime
+  createdAt DateTime @default(now())
 }
